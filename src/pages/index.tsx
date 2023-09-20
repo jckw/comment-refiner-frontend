@@ -1,6 +1,5 @@
 import Head from "next/head"
 import { Inter } from "next/font/google"
-import styles from "@/styles/Home.module.css"
 
 const inter = Inter({ subsets: ["latin"] })
 import { useCallback, useEffect, useState } from "react"
@@ -85,7 +84,7 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={`${styles.main} ${inter.className}`}>
+      <main className="flex min-h-screen flex-col items-center justify-between p-24">
         <div>
           {stories.map((story, i) => (
             <div
@@ -109,10 +108,10 @@ export default function Home() {
           ))}
         </div>
 
-        <div className={styles.description}>
+        <div>
           <p>{message}</p>
         </div>
-        <div className={styles.description}>
+        <div>
           <input
             type="text"
             onChange={(e) => setUserInput(e.target.value)}
