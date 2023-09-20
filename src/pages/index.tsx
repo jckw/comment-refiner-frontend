@@ -1,11 +1,64 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
-import styles from '@/styles/Home.module.css'
+import Head from "next/head"
+import { Inter } from "next/font/google"
+import styles from "@/styles/Home.module.css"
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin"] })
+import { useCallback, useEffect, useState } from "react"
+
+const article =
+  "- Elon Musk, the owner of X (formerly Twitter), has suggested implementing a small monthly fee for users to address the proliferation of bots on the social media platform.\n- Currently, the X platform only offers one subscription called Premium, which provides additional features and can cost up to $115 per year.\n- Musk's idea to charge all users could potentially lead to a decrease in the number of users and advertising revenue, which currently makes up the majority of X's income.\n- Musk made these comments during a livestreamed conversation with Israeli Prime Minister Benjamin Netanyahu, where they discussed the challenges of managing free speech and hate speech on the platform."
 
 export default function Home() {
+  const [userInput, setUserInput] = useState("")
+  const [message, setMessage] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [chatId, setChatId] = useState(null)
+
+  const streamReply = useCallback(
+    async (input: string) => {
+      setIsLoading(true)
+      setMessage("")
+
+      const response = await fetch("http://127.0.0.1:5000/refine", {
+        method: "POST",
+        body: JSON.stringify({
+          article,
+          user_input: input,
+          chat_id: chatId,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      const reader = response.body?.getReader()
+
+      let { value, done } = await reader?.read()!
+      while (!done) {
+        const parsedChunks = new TextDecoder("utf-8")
+          .decode(value)
+          .split("}")
+          .slice(0, -1)
+          .map((chunk) => chunk + "}")
+        console.log(parsedChunks)
+
+        parsedChunks.forEach((parsedChunk) => {
+          const dataChunk = JSON.parse(parsedChunk)
+          setChatId(dataChunk.chat_id)
+          setMessage((prev) => prev + dataChunk.delta)
+        })
+
+        const nextChunk = await reader?.read()!
+
+        value = nextChunk.value
+        done = nextChunk.done
+      }
+
+      setIsLoading(false)
+    },
+    [chatId]
+  )
+
   return (
     <>
       <Head>
@@ -16,97 +69,20 @@ export default function Home() {
       </Head>
       <main className={`${styles.main} ${inter.className}`}>
         <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>src/pages/index.tsx</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
-          </div>
+          <p>{message}</p>
         </div>
-
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
+        {article.split("\n").map((line, i) => (
+          <p key={i}>{line}</p>
+        ))}
+        <div className={styles.description}>
+          <input
+            type="text"
+            onChange={(e) => setUserInput(e.target.value)}
+            value={userInput}
           />
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
+          <button onClick={() => streamReply(userInput)}>
+            {isLoading ? "Loading..." : "Submit"}
+          </button>
         </div>
       </main>
     </>
