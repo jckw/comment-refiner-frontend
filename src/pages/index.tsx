@@ -1,6 +1,6 @@
 import Head from "next/head"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
@@ -14,6 +14,7 @@ const ChatBar = ({ storyId }: { storyId: string }) => {
   const [message, setMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [latestState, setLatestState] = useState(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (latestState === "COMPLETE" && message !== "") {
@@ -65,6 +66,7 @@ const ChatBar = ({ storyId }: { storyId: string }) => {
         done = nextChunk.done
       }
 
+      inputRef.current?.select()
       setIsLoading(false)
     },
     [chatId, storyId]
@@ -80,22 +82,29 @@ const ChatBar = ({ storyId }: { storyId: string }) => {
           </div>
         ) : null}
       </div>
-      <div className="flex gap-2 pt-2">
+      <form
+        className="flex gap-2 pt-2"
+        onSubmit={(e) => {
+          e.preventDefault()
+          streamReply(userInput)
+        }}
+      >
         <Input
+          ref={inputRef}
           className="flex-1"
           type="text"
           onChange={(e) => setUserInput(e.target.value)}
           value={userInput}
           placeholder="Leave a comment"
         />
-        <Button onClick={() => streamReply(userInput)}>
+        <Button type="submit">
           {isLoading
             ? "Loading..."
             : latestState === "COMPLETE"
             ? "Post"
             : "Refine"}
         </Button>
-      </div>
+      </form>
     </div>
   )
 }
