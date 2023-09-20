@@ -1,32 +1,18 @@
 import Head from "next/head"
-import { Inter } from "next/font/google"
 
-const inter = Inter({ subsets: ["latin"] })
 import { useCallback, useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Avatar } from "@radix-ui/react-avatar"
+import randomColor from "randomcolor"
+import ReactMarkdown from "react-markdown"
 
-export default function Home() {
+const ChatBar = ({ storyId }: { storyId: string }) => {
+  const [chatId, setChatId] = useState(null)
   const [userInput, setUserInput] = useState("")
   const [message, setMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [chatId, setChatId] = useState(null)
-  const [stories, setStories] = useState<
-    {
-      id: string
-      title: string
-      summary: string
-      comments?: { id: string; text: string }[]
-    }[]
-  >([])
-  const [selectedStoryIdx, setSelectedStoryIdx] = useState<number | null>(null)
-
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/news/stories`)
-      .then((res) => res.json())
-      .then((data) => {
-        setStories(data)
-        setSelectedStoryIdx(0)
-      })
-  }, [])
 
   const streamReply = useCallback(
     async (input: string) => {
@@ -38,7 +24,7 @@ export default function Home() {
         {
           method: "POST",
           body: JSON.stringify({
-            story_id: stories[selectedStoryIdx!].id,
+            story_id: storyId,
             user_input: input,
             chat_id: chatId,
           }),
@@ -73,8 +59,87 @@ export default function Home() {
 
       setIsLoading(false)
     },
-    [chatId, selectedStoryIdx, stories]
+    [chatId, storyId]
   )
+
+  return (
+    <div className="flex-1">
+      <div style={{ position: "relative" }}>
+        {message ? (
+          <div className="absolute bottom-0 bg-white p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
+            <p className="font-mono">{message}</p>
+          </div>
+        ) : null}
+      </div>
+      <div className="flex gap-2 pt-2">
+        <Input
+          className="flex-1"
+          type="text"
+          onChange={(e) => setUserInput(e.target.value)}
+          value={userInput}
+          placeholder="Leave a comment"
+        />
+        <Button onClick={() => streamReply(userInput)}>
+          {isLoading ? "Loading..." : "Submit"}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+type Story = {
+  id: string
+  title: string
+  summary: string
+  comments?: { id: string; text: string }[]
+}
+
+const StoryCard = ({ story }: { story: Story }) => {
+  return (
+    <Card className="mb-8">
+      <CardHeader>
+        <h2 className="font-semibold text-lg">{story.title}</h2>
+      </CardHeader>
+      <CardContent>
+        <ReactMarkdown>{story.summary}</ReactMarkdown>
+        <div className="mt-3">
+          {story.comments?.map((comment) => (
+            <div
+              key={comment.id}
+              className="flex items-start gap-2 mb-2 text-gray-700"
+            >
+              <Avatar className="pt-1">
+                <div
+                  style={{
+                    backgroundColor: randomColor({ seed: comment.id }),
+                    width: 24,
+                    height: 24,
+                    borderRadius: 24,
+                  }}
+                />
+              </Avatar>
+              <div className="text-sm gray-100">{comment.text}</div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+      <CardFooter>
+        <ChatBar storyId={story.id} />
+      </CardFooter>
+    </Card>
+  )
+}
+
+export default function Home() {
+  const [stories, setStories] = useState<Story[]>([])
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/news/stories`)
+      .then((res) => res.json())
+      .then((data) => {
+        setStories(data)
+      })
+  }, [])
 
   return (
     <>
@@ -86,40 +151,9 @@ export default function Home() {
       </Head>
       <main className="flex min-h-screen flex-col items-center justify-between p-24">
         <div>
-          {stories.map((story, i) => (
-            <div
-              key={story.id}
-              style={selectedStoryIdx === i ? { backgroundColor: "red" } : {}}
-              onClick={() => setSelectedStoryIdx(stories.indexOf(story))}
-            >
-              <h2>{story.title}</h2>
-              <p>{story.summary}</p>
-              <div>
-                {story.comments?.map((comment) => (
-                  <div
-                    key={comment.id}
-                    style={{ padding: 8, fontSize: "12px" }}
-                  >
-                    {comment.text}
-                  </div>
-                ))}
-              </div>
-            </div>
+          {stories.map((story) => (
+            <StoryCard story={story} key={story.id} />
           ))}
-        </div>
-
-        <div>
-          <p>{message}</p>
-        </div>
-        <div>
-          <input
-            type="text"
-            onChange={(e) => setUserInput(e.target.value)}
-            value={userInput}
-          />
-          <button onClick={() => streamReply(userInput)}>
-            {isLoading ? "Loading..." : "Submit"}
-          </button>
         </div>
       </main>
     </>
