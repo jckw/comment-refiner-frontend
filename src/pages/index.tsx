@@ -19,17 +19,20 @@ export default function Home() {
       setIsLoading(true)
       setMessage("")
 
-      const response = await fetch("http://127.0.0.1:5000/refine", {
-        method: "POST",
-        body: JSON.stringify({
-          article,
-          user_input: input,
-          chat_id: chatId,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_HOST}/refine`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            article,
+            user_input: input,
+            chat_id: chatId,
+          }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
 
       const reader = response.body?.getReader()
 
