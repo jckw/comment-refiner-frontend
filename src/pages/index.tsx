@@ -38,7 +38,7 @@ export default function Home() {
         {
           method: "POST",
           body: JSON.stringify({
-            article: stories[selectedStoryIdx!].summary,
+            story_id: stories[selectedStoryIdx!].id,
             user_input: input,
             chat_id: chatId,
           }),
