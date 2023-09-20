@@ -13,6 +13,14 @@ const ChatBar = ({ storyId }: { storyId: string }) => {
   const [userInput, setUserInput] = useState("")
   const [message, setMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [latestState, setLatestState] = useState(null)
+
+  useEffect(() => {
+    if (latestState === "COMPLETE" && message !== "") {
+      setUserInput(message)
+      setMessage("")
+    }
+  }, [latestState, message])
 
   const streamReply = useCallback(
     async (input: string) => {
@@ -43,10 +51,10 @@ const ChatBar = ({ storyId }: { storyId: string }) => {
           .split("}")
           .slice(0, -1)
           .map((chunk) => chunk + "}")
-        console.log(parsedChunks)
 
         parsedChunks.forEach((parsedChunk) => {
           const dataChunk = JSON.parse(parsedChunk)
+          setLatestState(dataChunk.state)
           setChatId(dataChunk.chat_id)
           setMessage((prev) => prev + dataChunk.delta)
         })
@@ -65,9 +73,10 @@ const ChatBar = ({ storyId }: { storyId: string }) => {
   return (
     <div className="flex-1">
       <div style={{ position: "relative" }}>
-        {message ? (
-          <div className="absolute bottom-0 bg-white p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
-            <p className="font-mono">{message}</p>
+        {message || isLoading ? (
+          <div className="absolute bottom-0 bg-indigo-500 text-white p-4 rounded-lg bg-card text-card-foreground shadow-2xl text-sm font-mono shadow-indigo-500/50">
+            {message}
+            {isLoading ? "..." : null}
           </div>
         ) : null}
       </div>
@@ -80,7 +89,11 @@ const ChatBar = ({ storyId }: { storyId: string }) => {
           placeholder="Leave a comment"
         />
         <Button onClick={() => streamReply(userInput)}>
-          {isLoading ? "Loading..." : "Submit"}
+          {isLoading
+            ? "Loading..."
+            : latestState === "COMPLETE"
+            ? "Post"
+            : "Refine"}
         </Button>
       </div>
     </div>
@@ -96,7 +109,7 @@ type Story = {
 
 const StoryCard = ({ story }: { story: Story }) => {
   return (
-    <Card className="mb-8">
+    <Card>
       <CardHeader>
         <h2 className="font-semibold text-lg">{story.title}</h2>
       </CardHeader>
@@ -149,12 +162,10 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="flex min-h-screen flex-col items-center justify-between p-24">
-        <div>
-          {stories.map((story) => (
-            <StoryCard story={story} key={story.id} />
-          ))}
-        </div>
+      <main className="flex flex-col items-center justify-between p-24 max-w-2xl gap-4 mx-auto">
+        {stories.map((story) => (
+          <StoryCard story={story} key={story.id} />
+        ))}
       </main>
     </>
   )
