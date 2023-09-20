@@ -130,16 +130,16 @@ const StoryCard = ({ story }: { story: Story }) => {
               key={comment.id}
               className="flex items-start gap-2 mb-2 text-gray-700"
             >
-              <Avatar className="pt-1">
-                <div
-                  style={{
-                    backgroundColor: randomColor({ seed: comment.id }),
-                    width: 24,
-                    height: 24,
-                    borderRadius: 24,
-                  }}
-                />
-              </Avatar>
+              <div
+                style={{
+                  marginTop: 2,
+                  backgroundColor: randomColor({ seed: comment.text }),
+                  width: 20,
+                  height: 20,
+                  borderRadius: 1000,
+                  flexShrink: 0,
+                }}
+              />
               <div className="text-sm gray-100">{comment.text}</div>
             </div>
           ))}
