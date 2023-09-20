@@ -5,14 +5,29 @@ import styles from "@/styles/Home.module.css"
 const inter = Inter({ subsets: ["latin"] })
 import { useCallback, useEffect, useState } from "react"
 
-const article =
-  "- Elon Musk, the owner of X (formerly Twitter), has suggested implementing a small monthly fee for users to address the proliferation of bots on the social media platform.\n- Currently, the X platform only offers one subscription called Premium, which provides additional features and can cost up to $115 per year.\n- Musk's idea to charge all users could potentially lead to a decrease in the number of users and advertising revenue, which currently makes up the majority of X's income.\n- Musk made these comments during a livestreamed conversation with Israeli Prime Minister Benjamin Netanyahu, where they discussed the challenges of managing free speech and hate speech on the platform."
-
 export default function Home() {
   const [userInput, setUserInput] = useState("")
   const [message, setMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [chatId, setChatId] = useState(null)
+  const [stories, setStories] = useState<
+    {
+      id: string
+      title: string
+      summary: string
+      comments?: { id: string; text: string }[]
+    }[]
+  >([])
+  const [selectedStoryIdx, setSelectedStoryIdx] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/news/stories`)
+      .then((res) => res.json())
+      .then((data) => {
+        setStories(data)
+        setSelectedStoryIdx(0)
+      })
+  }, [])
 
   const streamReply = useCallback(
     async (input: string) => {
@@ -24,7 +39,7 @@ export default function Home() {
         {
           method: "POST",
           body: JSON.stringify({
-            article,
+            article: stories[selectedStoryIdx!].summary,
             user_input: input,
             chat_id: chatId,
           }),
@@ -59,7 +74,7 @@ export default function Home() {
 
       setIsLoading(false)
     },
-    [chatId]
+    [chatId, selectedStoryIdx, stories]
   )
 
   return (
@@ -71,12 +86,32 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className={`${styles.main} ${inter.className}`}>
+        <div>
+          {stories.map((story, i) => (
+            <div
+              key={story.id}
+              style={selectedStoryIdx === i ? { backgroundColor: "red" } : {}}
+              onClick={() => setSelectedStoryIdx(stories.indexOf(story))}
+            >
+              <h2>{story.title}</h2>
+              <p>{story.summary}</p>
+              <div>
+                {story.comments?.map((comment) => (
+                  <div
+                    key={comment.id}
+                    style={{ padding: 8, fontSize: "12px" }}
+                  >
+                    {comment.text}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
         <div className={styles.description}>
           <p>{message}</p>
         </div>
-        {article.split("\n").map((line, i) => (
-          <p key={i}>{line}</p>
-        ))}
         <div className={styles.description}>
           <input
             type="text"
