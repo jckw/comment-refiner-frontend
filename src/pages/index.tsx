@@ -171,11 +171,16 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="flex flex-col items-center justify-between p-24 max-w-2xl gap-4 mx-auto">
-        {stories.map((story) => (
-          <StoryCard story={story} key={story.id} />
-        ))}
-      </main>
+      <div className="py-8 px-4 max-w-2xl mx-auto">
+        <header className="my-8 ">
+          <h1 className="text-2xl font-bold">Comment Copilot</h1>
+        </header>
+        <main className="flex flex-col items-center justify-between gap-4">
+          {stories.map((story) => (
+            <StoryCard story={story} key={story.id} />
+          ))}
+        </main>
+      </div>
     </>
   )
 }
